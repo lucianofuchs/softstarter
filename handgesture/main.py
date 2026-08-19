@@ -75,9 +75,15 @@ else:
                 # Destaca a ponta do indicador colocando uma esfera azul maior
                 cv2.circle(frame, (ix, iy), 12, (255, 0, 0), cv2.FILLED)
 
+                if iy <= 150 and ix <= 150:
+                    cv2.putText(frame,'no quadrado',(5,75),cv2.FONT_HERSHEY_COMPLEX,0.7,(255,255,255),2)
+
+                
+
         # Exibe a tela final processada
-        cv2.imshow("Python 3.14 - MediaPipe Tasks", frame)
-        
+        cv2.rectangle(frame,(1,1),(150,150),(0,255,0),3)
+        cv2.imshow("Python 3.14 - Softstarter", frame)
+
         # Fecha se pressionar a tecla 'q'
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break

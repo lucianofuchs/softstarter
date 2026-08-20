@@ -1,0 +1,9 @@
+# Ambientes virtuais e dependências
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+
+# Pasta local do OpenCV, se for uma dependência
+handgesture/cv2/

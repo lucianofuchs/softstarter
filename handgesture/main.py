@@ -4,6 +4,8 @@ import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
+tempo = 0
+tempoy = 100
 
 diretorio_atual = os.path.dirname(os.path.abspath(__file__))
 
@@ -57,16 +59,44 @@ else:
                 
                 ponta_indicador = pontos_da_mao[8]
                 ix, iy = int(ponta_indicador.x * larg), int(ponta_indicador.y * alt)
+
+                ponta_polegar = pontos_da_mao[4]
+                px, py = int(ponta_polegar.x * larg), int(ponta_polegar.y * alt)
                 
                 cv2.circle(frame, (ix, iy), 12, (255, 0, 0), cv2.FILLED)
+                cv2.circle(frame, (px, py), 12, (0, 100, 180), cv2.FILLED)
+
+                difposy = iy-py
+                if difposy < 0: 
+                    difposy = abs(difposy)
+
+                difposx = ix-px
+                if difposx < 0: 
+                    difposx = abs(difposx)
+
+                    
+
+                if difposy <= 20 and difposx <= 20:
+                    cv2.putText(frame,'tick',(ix,iy),cv2.FONT_HERSHEY_COMPLEX,0.7,(255,255,255),2)
+
+                    if 570 <= ix <= 630:
+                        tempoy = iy
+                        tempo = py - 100
+                        tempo = 0.15 * tempo + 5
+                    
+                cv2.circle(frame, (600, tempoy), 8, (255,0,0), cv2.FILLED)
+                cv2.putText(frame,f'{tempo:.1f}s',(5,200),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,0),2)
 
                 if iy <= 150 and ix <= 150:
-                    cv2.putText(frame,'no quadrado',(5,75),cv2.FONT_HERSHEY_COMPLEX,0.7,(255,255,255),2)
+                    cv2.rectangle(frame,(1,1),(150,150),(0,255,0),cv2.FILLED)
 
                 
-
+        cv2.line(frame,(600,100),(600,400),(255,0,0),3)
         cv2.rectangle(frame,(1,1),(150,150),(0,255,0),3)
+        cv2.putText(frame,'START',(35,75),cv2.FONT_HERSHEY_COMPLEX,0.7,(255,255,255),2)
         cv2.imshow("Python 3.14 - Softstarter", frame)
+
+
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break

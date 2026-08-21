@@ -50,7 +50,7 @@ uint8_t rx_byte;
 char mensagem_rx[10];
 uint8_t indice_rx = 0;
 uint8_t tempo_rampa = 5;
-int pulso[2] = {30,60};
+int pulso[2] = {30,120};
 
 /* USER CODE END PV */
 
@@ -195,15 +195,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim){
 	if(htim->Instance == TIM1 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1){
 
-//HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
 
-		int atual = __HAL_TIM_GET_COMPARE(&htim1,TIM_CHANNEL_1);
+		int atual = __HAL_TIM_GET_COMPARE(htim,TIM_CHANNEL_1);
 
 		if (atual == 30){
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,pulso[1]);
+			__HAL_TIM_SET_COMPARE(htim,TIM_CHANNEL_1,pulso[1]);
 		}
 		else{
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,pulso[0]);
+			__HAL_TIM_SET_COMPARE(htim,TIM_CHANNEL_1,pulso[0]);
 		}
 
 

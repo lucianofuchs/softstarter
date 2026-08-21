@@ -3,9 +3,20 @@ import cv2
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
+import serial
+import time
 
+stm32 = serial.Serial(
+    port="COM3",
+    baudrate=115200,
+    timeout=1
+)
+
+time.sleep(2)
+mensagem = ''
 tempo = 0
 tempoy = 100
+ultima_medicao = time.perf_counter()
 
 diretorio_atual = os.path.dirname(os.path.abspath(__file__))
 
@@ -83,6 +94,7 @@ else:
                         tempoy = iy
                         tempo = py - 100
                         tempo = 0.15 * tempo + 5
+                        mensagem = f"T:{tempo:.0f}\n"
                     
                 cv2.circle(frame, (600, tempoy), 8, (255,0,0), cv2.FILLED)
                 cv2.putText(frame,f'{tempo:.1f}s',(5,200),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,0),2)
@@ -90,10 +102,25 @@ else:
                 if iy <= 150 and ix <= 150:
                     cv2.rectangle(frame,(1,1),(150,150),(0,255,0),cv2.FILLED)
 
+                    tempo_atual = time.perf_counter()
+                    if tempo_atual - ultima_medicao >= 1.0:
+                        dados = mensagem.encode("utf-8")
+
+                        bytes_enviados = stm32.write(dados)
+                        stm32.flush()
+
+                        print("Conteúdo enviado:", dados)
+                        print("Quantidade enviada:", bytes_enviados)
+                        
+                        ultima_medicao = tempo_atual
+                    
+
                 
         cv2.line(frame,(600,100),(600,400),(255,0,0),3)
         cv2.rectangle(frame,(1,1),(150,150),(0,255,0),3)
+        cv2.rectangle(frame,(153,1),(303,150),(0,0,255),3)
         cv2.putText(frame,'START',(35,75),cv2.FONT_HERSHEY_COMPLEX,0.7,(255,255,255),2)
+        cv2.putText(frame,'STOP',(185,75),cv2.FONT_HERSHEY_COMPLEX,0.7,(255,255,255),2)
         cv2.imshow("Python 3.14 - Softstarter", frame)
 
 

@@ -199,7 +199,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim){
 
 		int atual = __HAL_TIM_GET_COMPARE(htim,TIM_CHANNEL_1);
 
-		if (atual == 30){
+		if (atual == pulso[0]){
 			__HAL_TIM_SET_COMPARE(htim,TIM_CHANNEL_1,pulso[1]);
 		}
 		else{

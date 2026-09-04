@@ -29,6 +29,7 @@ tempo_ligado = 0
 tempo_atual = 0
 tempo_que_desligou = 0
 ultimo_estado_do_motor = 0
+emergencia_acionada = False
 
 
 
@@ -48,7 +49,7 @@ base_options = python.BaseOptions(model_asset_path=model_path)
 options = vision.HandLandmarkerOptions(
     base_options=base_options,
     running_mode=vision.RunningMode.IMAGE,
-    num_hands=1
+    num_hands=2
 )
 
 detector = vision.HandLandmarker.create_from_options(options)
@@ -75,6 +76,46 @@ else:
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame_rgb)
         
         resultado_deteccao = detector.detect(mp_image)
+
+        maos_na_emergencia = 0
+
+        if resultado_deteccao.hand_landmarks:
+            alt, larg, _ = frame.shape
+
+            for pontos_da_mao in resultado_deteccao.hand_landmarks:
+                # Desenha os pontos da mão
+                for landmark in pontos_da_mao:
+                    cx = int(landmark.x * larg)
+                    cy = int(landmark.y * alt)
+                    cv2.circle(frame, (cx, cy), 4, (0, 255, 0), cv2.FILLED)
+
+                # Ponta do indicador desta mão
+                indicador = pontos_da_mao[8]
+                ix = int(indicador.x * larg)
+                iy = int(indicador.y * alt)
+
+                cv2.circle(frame, (ix, iy), 12, (255, 0, 0), cv2.FILLED)
+
+                # Área do botão de emergência
+                if 425 <= ix <= 575 and 1 <= iy <= 150:
+                    maos_na_emergencia += 1
+
+        # Executar somente quando DUAS mãos estiverem no botão
+        if maos_na_emergencia >= 2:
+            cv2.rectangle(
+                frame,
+                (425, 1),
+                (575, 150),
+                (0, 0, 255),
+                cv2.FILLED
+            )
+
+            dados = mensagem_emergencia.encode("utf-8")
+            stm32.write(dados)
+            stm32.flush()
+
+            ligado_agora = None
+            ultimo_estado_do_motor = 0
 
         
         if ligado_agora:
@@ -221,15 +262,19 @@ else:
                                 ligado_agora = True
 
                 if 1 <= iy <= 150 and 425 <= ix <= 575:
-                    cv2.rectangle(frame,(425,1),(575,150),(0,0,255),cv2.FILLED)
-                    if ligado_agora is not None:
-                        dados = mensagem_emergencia.encode("utf-8")
-                        bytes_enviados = stm32.write(dados)
-                        stm32.flush()
-                        print("Conteúdo enviado:", dados)
-                        print("Quantidade enviada:", bytes_enviados)
-                        ultima_medicaod = tempo_atuald
-                        ligado_agora = None
+                    #cv2.rectangle(frame,(425,1),(575,150),(0,0,255),cv2.FILLED)
+                    if maos_na_emergencia >= 2:
+                        if not emergencia_acionada:
+                            dados = mensagem_emergencia.encode('utf-8')
+                            bytes_enviados = stm32.write(dados)
+                            stm32.flush()
+                            print("Conteúdo enviado:", dados)
+                            print("Quantidade enviada:", bytes_enviados)
+                            emergencia_acionada = True
+                            ligado_agora = None
+                            ultimo_estado_do_motor = 0
+                    else:
+                        emergencia_acionada = False
                     
                     
        

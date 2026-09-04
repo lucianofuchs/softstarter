@@ -46,10 +46,13 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+volatile uint8_t emergencia = 0;
+volatile int tempo_rampa = 5;
+volatile int tempo_desligar = 5;
+
 uint8_t rx_byte;
-char mensagem_rx[10];
+char mensagem_rx[32];
 uint8_t indice_rx = 0;
-uint8_t tempo_rampa = 5;
 int pulso[2] = {30,120};
 
 /* USER CODE END PV */
@@ -107,6 +110,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  while (1)
+	  {
+
+
+
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -157,39 +166,61 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-    if (huart->Instance == USART2)
+    if (huart->Instance != USART2)
+        return;
+
+    if (rx_byte == 'E') {
+		emergencia = 1;
+		indice_rx = 0;
+		tempo_desligar = 0;
+		tempo_rampa = 0;
+
+		HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
+		return;
+	}
+
+    if (rx_byte == '\n')
     {
-        if (rx_byte == '\n')
+        mensagem_rx[indice_rx] = '\0';
+
+        int tempo_recebido;
+
+        if (sscanf(mensagem_rx, "T:%d", &tempo_recebido) == 1)
         {
-            mensagem_rx[indice_rx] = '\0';
-
-            int tempo_recebido;
-
-            if (sscanf(mensagem_rx, "T:%d", &tempo_recebido) == 1)
+            if (tempo_recebido >= 5 && tempo_recebido <= 55)
             {
-                if (tempo_recebido >= 5 && tempo_recebido <= 50)
-                {
-                    tempo_rampa = tempo_recebido;
-                }
+                tempo_rampa = tempo_recebido;
+                emergencia = 0;
+                tempo_desligar = 0;
             }
+        }
+        else if (sscanf(mensagem_rx, "D:%d", &tempo_recebido) == 1)
+        {
+            if (tempo_recebido >= 5 && tempo_recebido <= 55)
+            {
+                tempo_desligar = tempo_recebido;
+                tempo_rampa = 0;
+                emergencia = 0;
+            }
+        }
 
-            indice_rx = 0;
+
+        indice_rx = 0;
+    }
+    else if (rx_byte != '\r')
+    {
+        if (indice_rx < sizeof(mensagem_rx) - 1)
+        {
+            mensagem_rx[indice_rx++] = rx_byte;
         }
         else
         {
-            if (indice_rx < sizeof(mensagem_rx) - 1)
-            {
-                mensagem_rx[indice_rx] = rx_byte;
-                indice_rx++;
-            }
-            else
-            {
-                indice_rx = 0;
-            }
+            // Descarta mensagem maior que o buffer
+            indice_rx = 0;
         }
-
-        HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
     }
+
+    HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
 }
 
 void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim){

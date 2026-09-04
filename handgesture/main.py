@@ -15,7 +15,7 @@ stm32 = serial.Serial(
 time.sleep(2)
 mensagem_liga = 'T:5s\n'
 mensagem_desliga = 'D:5s\n'
-mensagem_emergencia = 'E'
+mensagem_emergencia = 'E\n'
 tempo = 5
 tempoy = 100
 tempody = 175

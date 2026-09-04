@@ -13,10 +13,25 @@ stm32 = serial.Serial(
 )
 
 time.sleep(2)
-mensagem = ''
-tempo = 0
+mensagem_liga = 'T:5s\n'
+mensagem_desliga = 'D:5s\n'
+mensagem_emergencia = 'E'
+tempo = 5
 tempoy = 100
-ultima_medicao = time.perf_counter()
+tempody = 175
+tempo_desliga = 5
+tempo_antes = time.perf_counter()
+ultima_medicaod = time.perf_counter()
+ligado_agora = None
+ligado_antes = None
+tempo_que_ligou = 0
+tempo_ligado = 0
+tempo_atual = 0
+tempo_que_desligou = 0
+ultimo_estado_do_motor = 0
+
+
+
 
 diretorio_atual = os.path.dirname(os.path.abspath(__file__))
 
@@ -40,6 +55,8 @@ detector = vision.HandLandmarker.create_from_options(options)
 
 cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
+
+
 if not cap.isOpened():
     print("Não foi possível acessar a webcam.")
 else:
@@ -58,6 +75,59 @@ else:
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame_rgb)
         
         resultado_deteccao = detector.detect(mp_image)
+
+        
+        if ligado_agora:
+
+            cv2.rectangle(frame,(1,1),(150,150),(0,255,0),cv2.FILLED)
+            cv2.putText(frame,'LIGANDO',(35,75),cv2.FONT_HERSHEY_COMPLEX,0.7,(255,255,255),2)
+            tempo_atual = time.perf_counter()
+            tempo_ligado = tempo_atual - tempo_que_ligou
+
+            if ligado_antes is False or ligado_antes is None:
+                tempo_que_ligou = time.perf_counter()
+                
+
+            if tempo_atual - tempo_que_ligou >= tempo:
+                ligado_agora = None
+                tempo_antes = tempo_atual
+                tempo_ligado = 0
+                ultimo_estado_do_motor = 1
+
+        if ligado_agora is False:
+            cv2.rectangle(frame,(1,1),(150,150),(0,0,255),cv2.FILLED)
+            cv2.putText(frame,'DESLIGANDO',(15,75),cv2.FONT_HERSHEY_COMPLEX,0.7,(255,255,255),2)
+            tempo_atual = time.perf_counter()
+            tempo_ligado = tempo_atual - tempo_que_desligou
+
+            if ligado_antes is True or ligado_antes is None:
+                tempo_que_desligou = time.perf_counter()
+
+            if tempo_atual - tempo_que_desligou >= tempo_desliga:
+                ligado_agora = None
+                tempo_antes = tempo_atual
+                ultimo_estado_do_motor = 0
+
+        if ligado_agora is None:
+            tempo_atual = 0
+
+            if ultimo_estado_do_motor == 1:
+                cv2.putText(frame,f'Ligado',(155,50),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
+            if ultimo_estado_do_motor == 0:
+                cv2.putText(frame,f'Desligado',(155,50),cv2.FONT_HERSHEY_COMPLEX,1,(0,0,255),2)
+
+            
+
+        ligado_antes = ligado_agora
+
+        cv2.putText(frame,f'{tempo:.1f}s',(155,75),cv2.FONT_HERSHEY_COMPLEX,0.7,(255,0,0),2)
+        cv2.putText(frame,f'{tempo_desliga:.1f}s',(155,125),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,255),2)
+        cv2.putText(frame,f'{tempo_ligado:.1f}s',(155,100),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,0),2)
+        cv2.circle(frame, (600, tempoy), 8, (255,0,0), cv2.FILLED)
+        cv2.circle(frame, (10, tempody), 8, (0,0,255), cv2.FILLED)
+        
+                
+
         
         if resultado_deteccao.hand_landmarks:
             for pontos_da_mao in resultado_deteccao.hand_landmarks:
@@ -76,6 +146,7 @@ else:
                 
                 cv2.circle(frame, (ix, iy), 12, (255, 0, 0), cv2.FILLED)
                 cv2.circle(frame, (px, py), 12, (0, 100, 180), cv2.FILLED)
+                cv2.putText(frame,f'{mensagem_desliga}',(ix,iy),cv2.FONT_HERSHEY_COMPLEX,0.7,(255,255,255),2)
 
                 difposy = iy-py
                 if difposy < 0: 
@@ -85,43 +156,91 @@ else:
                 if difposx < 0: 
                     difposx = abs(difposx)
 
-                    
+                
 
                 if difposy <= 20 and difposx <= 20:
                     cv2.putText(frame,'tick',(ix,iy),cv2.FONT_HERSHEY_COMPLEX,0.7,(255,255,255),2)
 
-                    if 570 <= ix <= 630:
-                        tempoy = iy
-                        tempo = py - 100
-                        tempo = 0.15 * tempo + 5
-                        mensagem = f"T:{tempo:.0f}\n"
-                    
-                cv2.circle(frame, (600, tempoy), 8, (255,0,0), cv2.FILLED)
-                cv2.putText(frame,f'{tempo:.1f}s',(5,200),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,0),2)
+                    if ligado_agora is None:
 
+                        if 570 <= ix <= 630:
+                            tempoy = iy
+                            if iy < 100:
+                                tempoy = 100
+                            if iy > 400:
+                                tempoy = 400
+                            tempo = py - 100
+                            tempo = 0.15 * tempo + 5
+
+                            if tempo < 5:
+                                tempo = 5
+                            if tempo > 55:
+                                tempo = 55
+                            mensagem_liga = f"T:{tempo:.0f}\n"
+
+                        if 0 <= ix <= 40:
+                            tempody = py
+                            if py < 175:
+                                tempody = 175
+                            if py > 450:
+                                tempody = 450
+                            tempo_desliga = py - 190
+                            tempo_desliga = 0.2 * tempo_desliga + 5
+
+                            if tempo_desliga < 5:
+                                tempo_desliga = 5
+                            if tempo_desliga > 55:
+                                tempo_desliga = 55
+                            mensagem_desliga = f'D:{tempo_desliga:.0f}\n'                   
+
+                #botao unico
                 if iy <= 150 and ix <= 150:
-                    cv2.rectangle(frame,(1,1),(150,150),(0,255,0),cv2.FILLED)
+                    if ultimo_estado_do_motor == 1:
+                        if ligado_agora is None:
+                             ligado_agora = False
+                             tempo_atuald = time.perf_counter()
+                        if tempo_atuald - ultima_medicaod >= 1.0:
+                            dados = mensagem_desliga.encode("utf-8")
+                            bytes_enviados = stm32.write(dados)
+                            stm32.flush()
+                            print("Conteúdo enviado:", dados)
+                            print("Quantidade enviada:", bytes_enviados)
+                            ultima_medicaod = tempo_atuald
+                        
+                    if ultimo_estado_do_motor == 0:
+                        if ligado_agora is None:
 
-                    tempo_atual = time.perf_counter()
-                    if tempo_atual - ultima_medicao >= 1.0:
-                        dados = mensagem.encode("utf-8")
+                            tempo_atuald = time.perf_counter()
+                            if ligado_agora is None:
+                                dados = mensagem_liga.encode("utf-8")
+                                bytes_enviados = stm32.write(dados)
+                                stm32.flush()
+                                print("Conteúdo enviado:", dados)
+                                print("Quantidade enviada:", bytes_enviados)
+                                ultima_medicaod = tempo_atuald
+                                ligado_agora = True
 
+                if 1 <= iy <= 150 and 425 <= ix <= 575:
+                    cv2.rectangle(frame,(425,1),(575,150),(0,0,255),cv2.FILLED)
+                    if ligado_agora is not None:
+                        dados = mensagem_emergencia.encode("utf-8")
                         bytes_enviados = stm32.write(dados)
                         stm32.flush()
-
                         print("Conteúdo enviado:", dados)
                         print("Quantidade enviada:", bytes_enviados)
-                        
-                        ultima_medicao = tempo_atual
+                        ultima_medicaod = tempo_atuald
+                        ligado_agora = None
                     
-
-                
+                    
+       
         cv2.line(frame,(600,100),(600,400),(255,0,0),3)
-        cv2.rectangle(frame,(1,1),(150,150),(0,255,0),3)
-        cv2.rectangle(frame,(153,1),(303,150),(0,0,255),3)
-        cv2.putText(frame,'START',(35,75),cv2.FONT_HERSHEY_COMPLEX,0.7,(255,255,255),2)
-        cv2.putText(frame,'STOP',(185,75),cv2.FONT_HERSHEY_COMPLEX,0.7,(255,255,255),2)
+        cv2.line(frame,(10,175),(10,450),(0,0,255),3)
+        cv2.rectangle(frame,(1,1),(150,150),(100,100,100),3)
+        cv2.rectangle(frame,(425,1),(575,150),(0,0,255),3)
+        cv2.putText(frame,'EMERGÊNCIA',(432,75),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,0),2)
+        #cv2.putText(frame,f'{ultimo_estado_do_motor}',(185,75),cv2.FONT_HERSHEY_COMPLEX,0.7,(255,255,255),2)
         cv2.imshow("Python 3.14 - Softstarter", frame)
+        
 
 
 

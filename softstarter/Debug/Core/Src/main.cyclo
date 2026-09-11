@@ -2,5 +2,5 @@
 ../Core/Src/main.c:130:6:SystemClock_Config	3
 ../Core/Src/main.c:167:6:HAL_UART_RxCpltCallback	12
 ../Core/Src/main.c:226:6:HAL_TIM_OC_DelayElapsedCallback	4
-../Core/Src/main.c:244:6:HAL_TIM_PeriodElapsedCallback	4
+../Core/Src/main.c:244:6:HAL_TIM_PeriodElapsedCallback	1
 ../Core/Src/main.c:274:6:Error_Handler	1

@@ -53,7 +53,7 @@ volatile int tempo_desligar = 5;
 uint8_t rx_byte;
 char mensagem_rx[32];
 uint8_t indice_rx = 0;
-int pulso[2] = {100,200};
+int pulso[2] = {1,8};
 int contador = 0;
 
 /* USER CODE END PV */
@@ -100,11 +100,11 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_TIM1_Init();
-  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
   HAL_TIM_OC_Start_IT(&htim1, TIM_CHANNEL_1);
-  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
+  HAL_TIM_Base_Start_IT(&htim1);
+  //HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
   __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, pulso[0]);
 
 
@@ -242,26 +242,26 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim){
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
-
+/*
 	if (htim->Instance == TIM1){
 
 		contador++;
 
 		if (contador >=10){
 
-			pulso[1] += 1;
-			pulso[0] += 1;
+			pulso[1] += 10;
+			pulso[0] += 10;
 
 			contador = 0;
 
-			if (pulso[1] >= 600) {
-				pulso[1] = 200;
-				pulso[0] = 100;
+			if (pulso[1] >= 950) {
+				pulso[1] = 170;
+				pulso[0] = 70;
 			}
 
 		}
 
-	}
+	}*/
 
 }
 
